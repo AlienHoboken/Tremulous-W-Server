@@ -40,7 +40,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #define MAX_ADMIN_COMMANDS 64
 #define MAX_ADMIN_CMD_LEN 20
 #define MAX_ADMIN_BAN_REASON 50
-
+#define MAX_REPORTS 500
 /*
  * 1 - cannot be vote kicked, vote muted
  * 2 - cannot be censored or flood protected TODO
@@ -85,6 +85,20 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 // important note: QVM does not seem to allow a single char to be a
 // member of a struct at init time.  flag has been converted to char*
+
+typedef struct
+{
+        char name[ MAX_NAME_LENGTH ];
+        char guid[9];
+        char reason[ MAX_ADMIN_BAN_REASON ];
+        char made[18];
+        char reporter[ MAX_NAME_LENGTH ];
+    char ip[ 20 ];
+        char reporterGuid[9];
+        char reporterIp[ 20 ];
+        qboolean deleted;
+} g_admin_report_t;
+
 typedef struct
 {
   char *keyword;
@@ -93,6 +107,7 @@ typedef struct
   char *function;  // used for !help
   char *syntax;  // used for !help
 }
+
 g_admin_cmd_t;
 
 typedef struct g_admin_level
@@ -202,9 +217,11 @@ qboolean G_admin_warn( gentity_t *ent, int skiparg );
 qboolean G_reconnectdb( gentity_t *ent, int skiparg );
 qboolean G_admin_designate( gentity_t *ent, int skiparg );
 qboolean G_admin_cp( gentity_t *ent, int skiparg );
-
+qboolean G_admin_report( gentity_t *ent, int skiparg );
 qboolean G_icewave( gentity_t *ent, int skiparg );
-
+qboolean G_admin_report_load( gentity_t *ent, int skiparg );
+qboolean G_admin_report_list( gentity_t *ent, int skiparg );
+qboolean G_admin_report_delete( gentity_t *ent, int skiparg );
 qboolean G_liskball( gentity_t *ent, int skiparg );
 
 qboolean G_heal( gentity_t *ent, int skiparg );
