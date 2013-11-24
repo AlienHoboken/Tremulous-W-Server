@@ -301,7 +301,23 @@ g_admin_cmd_t g_admin_cmds[ ] =
       "revoke designated builder privileges",
       "[^3name|slot#^7]"
     },
-    
+            {
+                "report", G_admin_report, "R",
+                "Report a player.",
+                "[^3name|slot#^7] [reason]"
+        },
+        {"reportdelete", G_admin_report_delete, "Z",
+                "Delete ip rules",
+                "^7[Number]"
+        },
+        {"reportload", G_admin_report_load, "Z",
+                "Load reports.",
+                ""
+        },
+        {"reportlist", G_admin_report_list, "Z",
+                "List reports.",
+                "^7[Start number]"
+        },
     {"unlock", G_admin_unlock, "K",
       "unlock a locked team",
       "[^3a|h^7]"
@@ -475,6 +491,7 @@ static int adminNumCmds = sizeof( g_admin_cmds ) / sizeof( g_admin_cmds[ 0 ] );
 static int admin_level_maxname = 0;
 g_admin_level_t *g_admin_levels[ MAX_ADMIN_LEVELS ];
 g_admin_admin_t *g_admin_admins[ MAX_ADMIN_ADMINS ];
+g_admin_report_t *g_admin_reports[ MAX_REPORTS ];
 g_admin_ban_t *g_admin_bans[ MAX_ADMIN_BANS ];
 g_admin_command_t *g_admin_commands[ MAX_ADMIN_COMMANDS ];
 g_admin_namelog_t *g_admin_namelog[ MAX_ADMIN_NAMELOGS ];
@@ -6585,6 +6602,590 @@ qboolean G_adminWhiteList(gentity_t *ent, int skiparg)
 	}
 	ADMBP_end();
 	return qtrue;
+}
+static void G_admin_report_save( void )
+{
+        fileHandle_t f;
+        int len, i;
+        int t;
+        
+        t = trap_RealTime( NULL );
+        len = trap_FS_FOpenFile( "reports.dat", &f, FS_WRITE );
+        if( len < 0 )
+        {
+                G_Printf( "reportsave: could not open report file.\n" );
+                return;
+        }
+        for( i = 0; i < MAX_REPORTS && g_admin_reports[ i ]; i++ )
+        {
+                if (g_admin_reports[ i ]->deleted)
+                        continue;
+                trap_FS_Write( "[report]\n", 9, f );
+                trap_FS_Write( "name   = ", 9, f );
+                admin_writeconfig_string( g_admin_reports[ i ]->name, f );
+                trap_FS_Write( "guid   = ", 9, f );
+                admin_writeconfig_string( g_admin_reports[ i ]->guid, f );
+                trap_FS_Write( "ip     = ", 9, f );
+                admin_writeconfig_string( g_admin_reports[ i ]->ip, f );
+                trap_FS_Write( "reason = ", 9, f );
+                admin_writeconfig_string( g_admin_reports[ i ]->reason, f );
+                trap_FS_Write( "made = ", 7, f );
+                admin_writeconfig_string( g_admin_reports[ i ]->made, f );
+                trap_FS_Write( "reporter = ", 11, f );
+                admin_writeconfig_string( g_admin_reports[ i ]->reporter, f );
+                trap_FS_Write( "reporterGuid = ", 15, f );
+                admin_writeconfig_string( g_admin_reports[ i ]->reporterGuid, f );
+                trap_FS_Write( "reporterIp = ", 13, f );
+                admin_writeconfig_string( g_admin_reports[ i ]->reporterIp, f );
+                trap_FS_Write( "\n", 1, f );
+        }
+        trap_FS_FCloseFile( f );
+}
+
+static qboolean admin_create_report( gentity_t *ent,
+                                                                        char *name,
+                                                                        char *guid,
+                                                                        char *ip,
+                                                                        char *reason,
+                                                                        char *reporter,
+                                                                        char *reporterGuid,
+                                                                        char *reporterIp,
+                                                                        char *made) 
+{
+        g_admin_report_t *b = NULL;
+        int i;
+        int j;
+        qboolean foundAdminTrueName=qfalse;
+        
+        b = G_Alloc( sizeof( g_admin_report_t ) );
+        
+        if( !b )
+                return qfalse;
+        
+        Q_strncpyz( b->name, name, sizeof( b->name ) );
+        Q_strncpyz( b->guid, guid, sizeof( b->guid ) );
+        Q_strncpyz( b->ip, ip, sizeof( b->ip ) );
+        Q_strncpyz( b->reason, reason, sizeof( b->reason ) );
+        Q_strncpyz( b->reporter, reporter, sizeof( b->reporter ) );
+        Q_strncpyz( b->reporterGuid, reporterGuid, sizeof( b->reporterGuid ) );
+        Q_strncpyz( b->reporterIp, reporterIp, sizeof( b->reporterIp ) );
+        Q_strncpyz( b->made, made, sizeof( b->made ) );
+        
+        
+        if( ent ) {
+                //Get admin true name
+                for(j = 0; j < MAX_ADMIN_ADMINS && g_admin_admins[ j ]; j++ )
+                {
+                        if( !Q_stricmp( g_admin_admins[ j ]->guid, ent->client->pers.guid ) )
+                        {
+                                Q_strncpyz( b->reporter, g_admin_admins[ j ]->name, sizeof( b->reporter  ) );
+                                foundAdminTrueName=qtrue;
+                                break;
+                        }
+                }
+                if(foundAdminTrueName==qfalse) Q_strncpyz( b->reporter, ent->client->pers.netname, sizeof( b->reporter ) );
+        }
+        else
+                Q_strncpyz( b->reporter, "console", sizeof( b->reporter ) );
+        /*if( !seconds )
+         b->expires = 0;
+         else
+         b->expires = t + seconds;*/
+        if( !*reason )
+                Q_strncpyz( b->reason, "reported by admin", sizeof( b->reason ) );
+        else
+                Q_strncpyz( b->reason, reason, sizeof( b->reason ) );
+        for( i = 0; i < MAX_REPORTS && g_admin_reports[ i ]; i++ )
+                ;
+        if( i == MAX_REPORTS )
+        {
+                ADMP( "^3!report: ^7too many reports\n" );
+                G_Free( b );
+                return qfalse;
+        }
+        g_admin_reports[ i ] = b;
+        G_admin_report_save();
+        return qtrue;
+}
+
+
+qboolean G_admin_report( gentity_t *ent, int skiparg )
+{
+        qboolean foundAdminTrueName=qfalse;
+        int pids[ MAX_CLIENTS ];
+        char name[ MAX_NAME_LENGTH ], *reason;
+        char n2[ MAX_NAME_LENGTH ];
+        char s2[ MAX_NAME_LENGTH ];
+        int minargc;
+        int i,j;
+        char reporter[ MAX_NAME_LENGTH ];
+        qtime_t qt;
+        char made[18];
+        int logmatch = -1, logmatches = 0;
+        char guid_stub[ 9 ];
+        qboolean exactmatch = qfalse;
+        int t;
+        
+        t = trap_RealTime( &qt );        
+        
+        minargc = 3 + skiparg;
+        if( G_admin_permission( ent, ADMF_UNACCOUNTABLE ) )
+                minargc = 2 + skiparg;
+        
+        if (ent->client->pers.totalReports >= 3) {
+                ADMP( "^3!report: ^7Sorry, but you are only allowed 3 reports.\n");
+                return qfalse;
+        }
+        
+        if( G_SayArgc() < minargc )
+        {
+                ADMP( "^3!report: ^7usage: report [name] [reason]\n" );
+                return qfalse;
+        }
+        G_SayArgv( 1 + skiparg, name, sizeof( name ) );
+        G_SanitiseString( name, s2, sizeof( s2 ) );
+        reason = G_SayConcatArgs( 2 + skiparg );
+        
+        if( !admin_higher( ent, &g_entities[ pids[ 0 ] ] ) )
+        {
+                ADMP( "^3!report: ^7sorry, but your intended victim has a higher admin"
+                         " level than you.\n" );
+                return qfalse;
+        }
+        
+        if( ent ) {
+                //Get admin true name
+                for(j = 0; j < MAX_ADMIN_ADMINS && g_admin_admins[ j ]; j++ )
+                {
+                        if( !Q_stricmp( g_admin_admins[ j ]->guid, ent->client->pers.guid ) )
+                        {
+                                strcpy(reporter, g_admin_admins[ j ]->name );
+                                foundAdminTrueName=qtrue;
+                                break;
+                        }
+                }
+                if(foundAdminTrueName==qfalse) strcpy(reporter, ent->client->pers.netname );
+        }
+        else
+                strcpy(reporter, "console" );
+        
+        Q_strncpyz( made, va( "%02i/%02i/%02i %02i:%02i:%02i",
+                                                 (qt.tm_mon + 1), qt.tm_mday, (qt.tm_year - 100),
+                                                 qt.tm_hour, qt.tm_min, qt.tm_sec ),
+                           sizeof( made ) );
+        
+        for( i = 0; i < MAX_ADMIN_NAMELOGS && g_admin_namelog[ i ]; i++ )
+        {
+                
+                // skip disconnected players when reporting on slot number
+                if( g_admin_namelog[ i ]->slot == -1 )
+                        continue;
+                
+                if( !Q_stricmp( va( "%d", g_admin_namelog[ i ]->slot ), s2 ) )
+                {
+                        logmatches = 1;
+                        logmatch = i;
+                        exactmatch = qtrue;
+                        break;
+                }
+        } 
+        
+        for( i = 0;
+                !exactmatch && i < MAX_ADMIN_NAMELOGS && g_admin_namelog[ i ];
+                i++ )
+        {
+                
+                if( !Q_stricmp( g_admin_namelog[ i ]->ip, s2 ) )
+                {
+                        logmatches = 1;
+                        logmatch = i;
+                        exactmatch = qtrue;
+                        break;
+                }
+                for( j = 0; j < MAX_ADMIN_NAMELOG_NAMES
+                        && g_admin_namelog[ i ]->name[ j ][ 0 ]; j++ )
+                {
+                        G_SanitiseString(g_admin_namelog[ i ]->name[ j ], n2, sizeof( n2 ) );
+                        if( strstr( n2, s2 ) )
+                        {
+                                if( logmatch != i )
+                                        logmatches++;
+                                logmatch = i; 
+                        }
+                }
+        }
+        
+        if( !logmatches ) 
+        {
+                ADMP( "^3!report: ^7no player found by that name, IP, or slot number\n" );
+                return qfalse;
+        } 
+        else if( logmatches > 1 )
+        {
+                ADMBP_begin();
+                ADMBP( "^3!report: ^7multiple recent clients match name, use IP or slot#:\n" );
+                for( i = 0; i < MAX_ADMIN_NAMELOGS && g_admin_namelog[ i ]; i++ )
+                {
+                        for( j = 0; j < 8; j++ )
+                                guid_stub[ j ] = g_admin_namelog[ i ]->guid[ j + 24 ];
+                        guid_stub[ j ] = '\0';
+                        for( j = 0; j < MAX_ADMIN_NAMELOG_NAMES
+                                && g_admin_namelog[ i ]->name[ j ][ 0 ]; j++ )
+                        {
+                                G_SanitiseString(g_admin_namelog[ i ]->name[ j ], n2, sizeof( n2 ) );
+                                if( strstr( n2, s2 ) )
+                                {
+                                        if( g_admin_namelog[ i ]->slot > -1 )
+                                                ADMBP( "^3" );
+                                        ADMBP( va( "%-2s ^7'%s^7'\n",
+                                                          (g_admin_namelog[ i ]->slot > -1) ?
+                                                          va( "%d", g_admin_namelog[ i ]->slot ) : "-",
+                                                          g_admin_namelog[ i ]->name[ j ] ) );
+                                }
+                        }
+                }
+                ADMBP_end();
+                return qfalse;
+        }
+        
+        ADMBP_begin();
+        ADMBP( va( "^3!report: %s ^7has been reported. Thank you.\n", g_admin_namelog[ logmatch ]->name[ 0 ] ) );
+        ADMBP_end();
+        
+        admin_create_report (ent,
+                                                 g_admin_namelog[ logmatch ]->name[ 0 ],
+                                                 g_admin_namelog[ logmatch ]->guid,
+                                                 g_admin_namelog[ logmatch ]->ip,
+                                                 reason,
+                                                 reporter,
+                                                 ent->client->pers.guid,
+                                                 ent->client->pers.ip,
+                                                 made);
+        ent->client->pers.totalReports = (ent->client->pers.totalReports + 1);
+        return qtrue;
+        
+}
+
+qboolean G_admin_report_load ( gentity_t *ent, int skiparg ) 
+{
+        g_admin_report_t * l = NULL;
+        int lc = 0;
+        fileHandle_t f;
+        int len;
+        char *cnf, *cnf2;
+        char *t;
+        qboolean report_open;
+        
+        len = trap_FS_FOpenFile( "reports.dat", &f, FS_READ ) ;
+        if( len < 0 )
+        {
+                ADMP( va( "^3!reportload: ^7could not open report file.\n") );
+                return qfalse;
+        }
+        cnf = G_Alloc( len + 1 );
+        cnf2 = cnf;
+        trap_FS_Read( cnf, len, f );
+        *( cnf + len ) = '\0';
+        trap_FS_FCloseFile( f );
+        
+        t = COM_Parse( &cnf );
+        report_open = qfalse;
+        while( *t )
+        {
+                if( !Q_stricmp( t, "[report]" ) )
+                {
+                        
+                        if( report_open )
+                                g_admin_reports[ lc++ ] = l;
+                        report_open = qfalse;
+                }
+                
+                if( report_open )
+                {
+                        if( !Q_stricmp( t, "name" ) )
+                        {
+                                admin_readconfig_string( &cnf, l->name, sizeof( l->name ) );
+                        }
+                        else if( !Q_stricmp( t, "guid" ) )
+                        {
+                                admin_readconfig_string( &cnf, l->guid, sizeof( l->guid ) );
+                        }
+                        else if( !Q_stricmp( t, "ip" ) )
+                        {
+                                admin_readconfig_string( &cnf, l->ip, sizeof( l->ip ) );
+                        }
+                        else if( !Q_stricmp( t, "reporter" ) )
+                        {
+                                admin_readconfig_string( &cnf, l->reporter, sizeof( l->reporter ) );
+                        }
+                        else if( !Q_stricmp( t, "reason" ) )
+                        {
+                                admin_readconfig_string( &cnf, l->reason, sizeof( l->reason ) );
+                        }
+                        else if( !Q_stricmp( t, "reporterGuid" ) )
+                        {
+                                admin_readconfig_string( &cnf, l->reporterGuid, sizeof( l->reporterGuid ) );
+                        }
+                        else if( !Q_stricmp( t, "reporterIp" ) )
+                        {
+                                admin_readconfig_string( &cnf, l->reporterIp, sizeof( l->reporterIp ) );
+                        }
+                        else if( !Q_stricmp( t, "made" ) )
+                        {
+                                admin_readconfig_string( &cnf, l->made, sizeof( l->made ) );
+                        }
+                        else
+                        {
+                                ADMP( va( "^3!reportload: ^7[report] parse error near %s on line %d\n",
+                                                 t,
+                                                 COM_GetCurrentParseLine() ) );
+                        }
+                }
+                
+                if( !Q_stricmp( t, "[report]" ) )
+                {
+                        if( lc >= MAX_REPORTS )
+                                return qfalse;
+                        l = G_Alloc( sizeof( g_admin_report_t ) );
+                        *l->name = '\0';
+                        *l->guid = '\0';
+                        *l->ip = '\0';
+                        *l->reporter = '\0';
+                        *l->reason = '\0';
+                        report_open = qtrue;
+                }
+                t = COM_Parse( &cnf );
+        }
+        if( report_open )
+        {
+                
+                g_admin_reports[ lc++ ] = l;
+        }
+        G_Free( cnf2 );
+        ADMP( va( "^3!reportload: ^7loaded %d reports.\n",
+                         lc ) );
+        
+        return qtrue;
+}
+
+qboolean G_admin_report_list( gentity_t *ent, int skiparg )
+{
+        int i, found = 0;
+        int t, j;
+        char name_fmt[ 32 ] = { "%s" };
+        char reporter_fmt[ 32 ] = { "%s" };
+        int max_name = 1, max_reporter = 1;
+        int start = 0;
+        char filter[ MAX_NAME_LENGTH ];
+        char n1[ MAX_NAME_LENGTH * 2 ] = {""};
+        char n2[ MAX_NAME_LENGTH * 2 ] = {""};
+        qboolean numeric = qtrue;
+        char *ip_match = NULL;
+        int ip_match_len = 0;
+        char name_match[ MAX_NAME_LENGTH ] = {""};
+        int show_count = 0;
+        char date[ 11 ];
+        char *made;
+        
+        t = trap_RealTime( NULL );
+        
+        for( i = 0; i < MAX_REPORTS && g_admin_reports[ i ]; i++ )
+        {
+                if (g_admin_reports[ i ]->deleted)
+                {
+                        continue;
+                }
+                found++;
+        }
+        
+        if( G_SayArgc() >= 2 + skiparg )
+        {
+                G_SayArgv( 1 + skiparg, filter, sizeof( filter ) );
+                if( G_SayArgc() >= 3 + skiparg )
+                {
+                        start = atoi( filter );
+                        G_SayArgv( 2 + skiparg, filter, sizeof( filter ) );
+                }
+                for( i = 0; i < sizeof( filter ) && filter[ i ] ; i++ )
+                {
+                        if( ( filter[ i ] < '0' || filter[ i ] > '9' )
+                           && filter[ i ] != '.' && filter[ i ] != '-' )
+                        {
+                                numeric = qfalse;
+                                break;
+                        }
+                }
+                
+                if (!numeric)
+                {
+                        G_SanitiseString( filter, name_match, sizeof( name_match) );
+                }
+                else if( strchr( filter, '.' ) != NULL )
+                {
+                        ip_match = filter;
+                        ip_match_len = strlen(ip_match);
+                }
+                else
+                {
+                        start = atoi( filter );
+                        filter[0] = '\0';
+                }
+                // reportlist 1 means start with report 0
+                if( start > 0 )
+                        start -= 1;
+                else if( start < 0 )
+                        start = found + start;
+        }
+        
+        if( start >= MAX_REPORTS || start < 0 )
+                start = 0;
+        
+        for( i = start; i < MAX_REPORTS && g_admin_reports[ i ] 
+                && show_count < MAX_ADMIN_SHOWBANS; i++ )
+        {
+                qboolean match = qfalse;
+                
+                if (!numeric)
+                {
+                        G_SanitiseString( g_admin_reports[ i ]->name, n1, sizeof( n1 ) );
+                        if (strstr( n1, name_match) )
+                                match = qtrue;
+                }
+                
+                if ( ( match ) || !ip_match
+                        || Q_strncmp( ip_match, g_admin_reports[ i ]->ip, ip_match_len) == 0 )
+                {
+                        G_DecolorString( g_admin_reports[ i ]->name, n1 );
+                        G_DecolorString( g_admin_reports[ i ]->reporter, n2 );
+                        if( strlen( n1 ) > max_name )
+                        {
+                                max_name = strlen( n1 );
+                        }
+                        if( strlen( n2 ) > max_reporter )
+                                max_reporter = strlen( n2 );
+                        
+                        show_count++;
+                }
+        }
+        
+        if( start >= found )
+        {
+                ADMP( va( "^3!reportlist: ^7there are %d reports\n", found ) );
+                return qfalse;
+        }
+        ADMBP_begin();
+        show_count = 0;
+        for( i = start; i < MAX_REPORTS && g_admin_reports[ i ]
+                && show_count < MAX_ADMIN_SHOWBANS; i++ )
+        {
+                
+                if (g_admin_reports[ i ]->deleted)
+                {
+                        continue;
+                }
+                
+                if (!numeric)
+                {
+                        G_SanitiseString( g_admin_reports[ i ]->name, n1, sizeof( n1 ) );
+                        if ( strstr ( n1, name_match ) == NULL )
+                                continue;
+                }
+                else if( ip_match != NULL
+                                && Q_strncmp( ip_match, g_admin_reports[ i ]->ip, ip_match_len ) != 0)
+                        continue;
+                
+                // only print out the the date part of made
+                date[ 0 ] = '\0';
+                made = g_admin_reports[ i ]->made;
+                for( j = 0; made && *made; j++ )
+                {
+                        if( ( j + 1 ) >= sizeof( date ) )
+                                break;
+                        if( *made == ' ' )
+                                break;
+                        date[ j ] = *made;
+                        date[ j + 1 ] = '\0';
+                        made++;
+                }
+                
+                G_DecolorString( g_admin_reports[ i ]->name, n1 );
+                Com_sprintf( name_fmt, sizeof( name_fmt ), "%%%is",
+                                        ( max_name + strlen( g_admin_reports[ i ]->name ) - strlen( n1 ) ) );
+                Com_sprintf( n1, sizeof( n1 ), name_fmt, g_admin_reports[ i ]->name ); 
+                
+                G_DecolorString( g_admin_reports[ i ]->reporter, n2 );
+                Com_sprintf( reporter_fmt, sizeof( reporter_fmt ), "%%%is",
+                                        ( max_reporter + strlen( g_admin_reports[ i ]->reporter ) - strlen( n2 ) ) );
+                Com_sprintf( n2, sizeof( n2 ), reporter_fmt, g_admin_reports[ i ]->reporter ); 
+                
+                ADMBP( va( "%4i %s^7 reported by %s^7 on %-8s\n  ^3GUID:^7 %s         ^5Reporter GUID:^7 %s\n  ^3IP:^7 %s      ^5Reporter IP:^7 %s\n  ^3Reason:^7 %s\n  \n",
+                                  ( i + 1 ),
+                                  n1,
+                                  n2,
+                                  date,
+                                  g_admin_reports[ i ]->guid,
+                                  g_admin_reports[ i ]->reporterGuid,
+                                  g_admin_reports[ i ]->ip,          
+                                  g_admin_reports[ i ]->reporterIp,
+                                  g_admin_reports[ i ]->reason) );
+                
+                show_count++;
+        }
+        
+        if (!numeric || ip_match)
+        {
+                char matchmethod[50];
+                if( numeric ) 
+                        Com_sprintf( matchmethod, sizeof(matchmethod), "IP" );
+                else
+                        Com_sprintf( matchmethod, sizeof(matchmethod), "name" );
+                
+                ADMBP( va( "^3!reportlist:^7 found %d matching reports by %s.  ",
+                                  show_count,
+                                  matchmethod ) );
+        }
+        else
+        {
+                ADMBP( va( "^3!reportlist:^7 showing reports %d - %d of %d.  ",
+                                  ( found ) ? ( start + 1 ) : 0,
+                                  ( ( start + MAX_ADMIN_SHOWBANS ) > found ) ?
+                                  found : ( start + MAX_ADMIN_SHOWBANS ),
+                                  found ) );
+        }
+        
+        if( ( start + MAX_ADMIN_SHOWBANS ) < found )
+        {
+                ADMBP( va( "run !reportlist %d %s to see more",
+                                  ( start + MAX_ADMIN_SHOWBANS + 1 ),
+                                  (filter[0]) ? filter : "" ) );
+        }
+        ADMBP( "\n" );
+        ADMBP_end();
+        return qtrue;
+}
+
+qboolean G_admin_report_delete( gentity_t *ent, int skiparg )
+{
+        int rnum;
+        char rs[ 5 ];
+        //int t;
+        
+        //t = trap_RealTime( NULL );
+        if( G_SayArgc() < 2 + skiparg )
+        {
+                ADMP( "^3!report: ^7usage: !report [report#]\n" );
+                return qfalse;
+        }
+        G_SayArgv( 1 + skiparg, rs, sizeof( rs ) );
+        rnum = atoi( rs );
+        if( rnum < 1 || rnum > MAX_REPORTS || !g_admin_reports[ rnum - 1 ] )
+        {
+                ADMP( "^3!report: ^7invalid report#\n" );
+                return qfalse;
+        }
+        g_admin_reports[ rnum -1 ]->deleted = qtrue;
+        G_admin_report_save();
+        return qtrue;
 }
 qboolean G_adminWhiteDelete(gentity_t *ent, int skiparg)
 {
