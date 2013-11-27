@@ -302,7 +302,7 @@ g_admin_cmd_t g_admin_cmds[ ] =
       "[^3name|slot#^7]"
     },
             {
-                "report", G_admin_report, "R",
+                "report", G_admin_report, "j",
                 "Report a player.",
                 "[^3name|slot#^7] [reason]"
         },
@@ -6732,10 +6732,6 @@ qboolean G_admin_report( gentity_t *ent, int skiparg )
         if( G_admin_permission( ent, ADMF_UNACCOUNTABLE ) )
                 minargc = 2 + skiparg;
         
-        if (ent->client->pers.totalReports >= 3) {
-                ADMP( "^3!report: ^7Sorry, but you are only allowed 3 reports.\n");
-                return qfalse;
-        }
         
         if( G_SayArgc() < minargc )
         {
@@ -6861,7 +6857,6 @@ qboolean G_admin_report( gentity_t *ent, int skiparg )
                                                  ent->client->pers.guid,
                                                  ent->client->pers.ip,
                                                  made);
-        ent->client->pers.totalReports = (ent->client->pers.totalReports + 1);
         return qtrue;
         
 }
