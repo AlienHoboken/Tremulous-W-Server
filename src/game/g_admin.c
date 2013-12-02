@@ -6719,6 +6719,7 @@ qboolean G_admin_report( gentity_t *ent, int skiparg )
         int minargc;
         int i,j;
         char reporter[ MAX_NAME_LENGTH ];
+        char reporterguid[ 8 ];
         qtime_t qt;
         char made[18];
         int logmatch = -1, logmatches = 0;
@@ -6843,18 +6844,22 @@ qboolean G_admin_report( gentity_t *ent, int skiparg )
                 ADMBP_end();
                 return qfalse;
         }
-        
+        for( i = 0; i < 8; i++ )
+        {
+		reporterGuid[ i ] = ent->client->pers.guid[ i + 24 ];
+	reporterGuid[ i ] = '\0';
+        }
         ADMBP_begin();
         ADMBP( va( "^3!report: %s ^7has been reported. Thank you.\n", g_admin_namelog[ logmatch ]->name[ 0 ] ) );
         ADMBP_end();
         
         admin_create_report (ent,
                                                  g_admin_namelog[ logmatch ]->name[ 0 ],
-                                                 guide_stub,
+                                                 g_admin_nalelog[ logmatch ]->guid,
                                                  g_admin_namelog[ logmatch ]->ip,
                                                  reason,
                                                  reporter,
-                                                 ent->client->pers.guid,
+                                                 reporterGuid,
                                                  ent->client->pers.ip,
                                                  made);
         return qtrue;
