@@ -6850,7 +6850,7 @@ qboolean G_admin_report( gentity_t *ent, int skiparg )
         
         admin_create_report (ent,
                                                  g_admin_namelog[ logmatch ]->name[ 0 ],
-                                                 g_admin_namelog[ logmatch ]->guid,
+                                                 guide_stub,
                                                  g_admin_namelog[ logmatch ]->ip,
                                                  reason,
                                                  reporter,
