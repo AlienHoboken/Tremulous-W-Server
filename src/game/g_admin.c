@@ -7185,6 +7185,8 @@ qboolean G_admin_report_delete( gentity_t *ent, int skiparg )
                 ADMP( "^3!report: ^7invalid report#\n" );
                 return qfalse;
         }
+        ADMP("^3!report: ^7report for %s deleted",
+        			g_admin_reports[ i ]->reporter	);
         g_admin_reports[ rnum -1 ]->deleted = qtrue;
         G_admin_report_save();
         return qtrue;
