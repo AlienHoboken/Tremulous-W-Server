@@ -6853,6 +6853,7 @@ qboolean G_admin_report( gentity_t *ent, int skiparg )
         	 for( j = 0; j < 8; j++ )
                      guid[ j ] = guidIn[ j + 24 ];
                         guid[ j ] = '\0';
+                        return guid;
         }
         admin_create_report (ent,
                                                  g_admin_namelog[ logmatch ]->name[ 0 ],
