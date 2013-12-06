@@ -6847,14 +6847,7 @@ qboolean G_admin_report( gentity_t *ent, int skiparg )
         ADMBP_begin();
         ADMBP( va( "^3!report: %s ^7has been reported. Thank you.\n", g_admin_namelog[ logmatch ]->name[ 0 ] ) );
         ADMBP_end();
-        guid( char guidIn[ 32 ])
-        {
-        	char guid[ 9 ];
-        	 for( j = 0; j < 8; j++ )
-                     guid[ j ] = guidIn[ j + 24 ];
-                        guid[ j ] = '\0';
-                        return guid;
-        }
+
         admin_create_report (ent,
                                                  g_admin_namelog[ logmatch ]->name[ 0 ],
                                                  guid(g_admin_namelog[ logmatch ]->guid),
@@ -7185,7 +7178,7 @@ qboolean G_admin_report_delete( gentity_t *ent, int skiparg )
                 ADMP( "^3!report: ^7invalid report#\n" );
                 return qfalse;
         }
-        ADMP("^3!report: ^7report for %s deleted",
+        ADMP("^3!report: ^7report for %s deleted\n",
         			g_admin_reports[ rnum ]->reporter	);
         g_admin_reports[ rnum -1 ]->deleted = qtrue;
         G_admin_report_save();
