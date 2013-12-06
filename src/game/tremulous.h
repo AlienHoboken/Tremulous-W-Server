@@ -72,12 +72,12 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #define LEVEL1_GRAB_TIME            300
 #define LEVEL1_GRAB_U_TIME          450
 #define _LEVEL1_PCLOUD_DMG           ADM(4)
-#define LEVEL1_PCLOUD_DMG           ADM(8)
+#define LEVEL1_PCLOUD_DMG           ADM(6)
 #define _LEVEL1_PCLOUD_RANGE         200.0f
 #define LEVEL1_PCLOUD_RANGE         300.0f
 #define LEVEL1_PCLOUD_REPEAT        2000
 #define _LEVEL1_PCLOUD_TIME         10000
-#define LEVEL1_PCLOUD_TIME          15000
+#define LEVEL1_PCLOUD_TIME          12000
 
 #define LEVEL2_CLAW_DMG             ADM(40)
 #define LEVEL2_CLAW_RANGE           96.0f
@@ -88,7 +88,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #define LEVEL2_CLAW_U_K_SCALE       1.0f
 #define LEVEL2_AREAZAP_DMG          ADM(100)
 #define _LEVEL2_AREAZAP_RANGE        300.0f
-#define LEVEL2_AREAZAP_RANGE        350.0f
+#define LEVEL2_AREAZAP_RANGE        325.0f
 #define LEVEL2_AREAZAP_WIDTH        20.0f
 #define LEVEL2_AREAZAP_REPEAT       1500
 #define LEVEL2_AREAZAP_TIME         1000
