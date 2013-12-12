@@ -382,7 +382,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 #define SHOTGUN_PRICE               150
 #define _SHOTGUN_SHELLS             8
-#define SHOTGUN_SHELLS              15
+#define SHOTGUN_SHELLS              13
 #define SHOTGUN_PELLETS             8 //used to sync server and client side
 #define SHOTGUN_MAXCLIPS            3
 #define SHOTGUN_REPEAT              800
