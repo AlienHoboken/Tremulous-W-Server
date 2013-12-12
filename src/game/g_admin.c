@@ -529,7 +529,7 @@ qboolean G_admin_permission_guid( char *guid, char flag )
         {
           while( *flags++ )
           {
-            if( *flags == flag )
+            if( *flags == flag  )
               return qfalse;
           }
           // flags with significance only for individuals (
@@ -7178,8 +7178,8 @@ qboolean G_admin_report_delete( gentity_t *ent, int skiparg )
                 ADMP( "^3!report: ^7invalid report#\n" );
                 return qfalse;
         }
-        ADMP("^3!report: ^7report for %s deleted\n",
-        			g_admin_reports[ rnum ]->reporter	);
+        ADMP("^3!report: ^7report #%s deleted\n",
+        			rnum	);
         g_admin_reports[ rnum -1 ]->deleted = qtrue;
         G_admin_report_save();
         return qtrue;
