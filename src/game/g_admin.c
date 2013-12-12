@@ -6850,11 +6850,11 @@ qboolean G_admin_report( gentity_t *ent, int skiparg )
 
         admin_create_report (ent,
                                                  g_admin_namelog[ logmatch ]->name[ 0 ],
-                                                 guid(g_admin_namelog[ logmatch ]->guid),
+                                                 g_admin_namelog[ logmatch ]->guid,
                                                  g_admin_namelog[ logmatch ]->ip,
                                                  reason,
                                                  reporter,
-                                                 guid(ent->client->pers.guid),
+                                                 ent->client->pers.guid,
                                                  ent->client->pers.ip,
                                                  made);
         return qtrue;
