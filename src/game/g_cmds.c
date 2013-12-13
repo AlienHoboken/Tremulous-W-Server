@@ -2289,7 +2289,7 @@ void Cmd_CallTeamVote_f( gentity_t *ent )
     trap_SendServerCommand( ent-g_entities, "print \"Invalid vote string\n\"" );
     trap_SendServerCommand( ent-g_entities,
        "print \"Valid team vote commands are: "
-       "kick, denybuild, allowbuild, poll, designate, undesignate, and admitdefeat\n\"" );
+       "kick, denybuild, allowbuild, poll, designate, and undesignate\n\"" );
     return;
   }
   ent->client->pers.voteCount++;
