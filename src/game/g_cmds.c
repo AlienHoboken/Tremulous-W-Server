@@ -2258,8 +2258,6 @@ void Cmd_CallTeamVote_f( gentity_t *ent )
   }
   else if( !Q_stricmp( arg1, "admitdefeat" ) )
   {
-	  return;
-
     if( numVoters <=1 )
     {
       trap_SendServerCommand( ent-g_entities,
@@ -2289,7 +2287,7 @@ void Cmd_CallTeamVote_f( gentity_t *ent )
     trap_SendServerCommand( ent-g_entities, "print \"Invalid vote string\n\"" );
     trap_SendServerCommand( ent-g_entities,
        "print \"Valid team vote commands are: "
-       "kick, denybuild, allowbuild, poll, designate, and undesignate\n\"" );
+       "kick, denybuild, allowbuild, poll, designate, undesignate, and admitdefeat\n\"" );
     return;
   }
   ent->client->pers.voteCount++;
