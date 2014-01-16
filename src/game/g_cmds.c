@@ -2258,8 +2258,6 @@ void Cmd_CallTeamVote_f( gentity_t *ent )
   }
   else if( !Q_stricmp( arg1, "admitdefeat" ) )
   {
-	  return;
-
     if( numVoters <=1 )
     {
       trap_SendServerCommand( ent-g_entities,
