@@ -1247,7 +1247,8 @@ GOBJ_ = \
   $(B)/base/game/g_global.o \
   \
   $(B)/base/qcommon/q_math.o \
-  $(B)/base/qcommon/q_shared.o
+  $(B)/base/qcommon/q_shared.o \
+  $(B)/base/qcommon/cJSON.o
 
 GOBJ = $(GOBJ_) $(B)/base/game/g_syscalls.o
 GVMOBJ = $(GOBJ_:%.o=%.asm) $(B)/base/game/bg_lib.asm
