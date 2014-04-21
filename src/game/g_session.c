@@ -274,7 +274,7 @@ void G_WriteSessionData( void )
 				
 
 				//badges to JSON
-				root = cJSON_CreateIntArray(level.clients[ i ].pers.badgeupdate[j],50)
+				root = cJSON_CreateIntArray(level.clients[ i ].pers.badgeupdate,50)
                 badge_out = cJSON_Print(root);
                 cJSON_Delete(root);
 				/*************************************************************/

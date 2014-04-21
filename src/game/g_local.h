@@ -445,8 +445,8 @@ typedef struct
   int banktime;
   
   //Badges
-  char			badges[ 50 ]; // 49 Badges 1-49
-  char 			badgeupdate[50];
+  int			badges[ 50 ]; // 49 Badges 1-49
+  int 			badgeupdate[50];
   //BadgeRelated
   int			gameswin;
   int 			blasterkills;
