@@ -1457,6 +1457,9 @@ char *ClientConnect( int clientNum, qboolean firstTime )
         for(j=0;j<50;j++) {
           cJSON *badge = cJSON_GetArrayItem(json, j);
           client->pers.badges[j] = badge->valueint;
+          if(badge->valueint == 1) { //count badges earned
+            client->pers.badgesobtained++;
+          }
         }
 				trap_mysql_finishquery();
 				
