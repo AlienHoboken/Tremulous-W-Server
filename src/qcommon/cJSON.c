@@ -23,7 +23,7 @@
 /* cJSON */
 /* JSON parser in C. */
 
-#include "../game/bg_lib.h"
+#include "cJSON.h"
 
 static const char *ep;
 
@@ -36,8 +36,8 @@ static int cJSON_strcasecmp(const char *s1,const char *s2)
 	return tolower(*(const unsigned char *)s1) - tolower(*(const unsigned char *)s2);
 }
 
-static void *(*cJSON_malloc)(size_t sz) = malloc;
-static void (*cJSON_free)(void *ptr) = free;
+static void *(*cJSON_malloc)(size_t sz) = G_Alloc;
+static void (*cJSON_free)(void *ptr) = G_Free;
 
 static char* cJSON_strdup(const char* str)
 {
@@ -115,16 +115,16 @@ static char *print_number(cJSON *item)
 	if (fabs(((double)item->valueint)-d)<=DBL_EPSILON && d<=INT_MAX && d>=INT_MIN)
 	{
 		str=(char*)cJSON_malloc(21);	/* 2^64+1 can be represented in 21 chars. */
-		if (str) sprintf(str,"%d",item->valueint);
+		if (str) Com_sprintf(str,sizeof(str),"%d",item->valueint);
 	}
 	else
 	{
 		str=(char*)cJSON_malloc(64);	/* This is a nice tradeoff. */
 		if (str)
 		{
-			if (fabs(floor(d)-d)<=DBL_EPSILON && fabs(d)<1.0e60)sprintf(str,"%.0f",d);
-			else if (fabs(d)<1.0e-6 || fabs(d)>1.0e9)			sprintf(str,"%e",d);
-			else												sprintf(str,"%f",d);
+			if (fabs(floor(d)-d)<=DBL_EPSILON && fabs(d)<1.0e60)Com_sprintf(str,sizeof(str),"%.0f",d);
+			else if (fabs(d)<1.0e-6 || fabs(d)>1.0e9)			Com_sprintf(str,sizeof(str),"%e",d);
+			else												Com_sprintf(str,sizeof(str),"%f",d);
 		}
 	}
 	return str;
@@ -232,7 +232,7 @@ static char *print_string_ptr(const char *str)
 				case '\n':	*ptr2++='n';	break;
 				case '\r':	*ptr2++='r';	break;
 				case '\t':	*ptr2++='t';	break;
-				default: sprintf(ptr2,"u%04x",token);ptr2+=5;	break;	/* escape and print */
+				default: Com_sprintf(ptr2,sizeof(ptr2),"u%04x",token);ptr2+=5;	break;	/* escape and print */
 			}
 		}
 	}
@@ -280,9 +280,9 @@ char *cJSON_PrintUnformatted(cJSON *item)	{return print_value(item,0,0);}
 static const char *parse_value(cJSON *item,const char *value)
 {
 	if (!value)						return 0;	/* Fail on null. */
-	if (!strncmp(value,"null",4))	{ item->type=cJSON_NULL;  return value+4; }
-	if (!strncmp(value,"false",5))	{ item->type=cJSON_False; return value+5; }
-	if (!strncmp(value,"true",4))	{ item->type=cJSON_True; item->valueint=1;	return value+4; }
+	if (!Q_strncmp(value,"null",4))	{ item->type=cJSON_NULL;  return value+4; }
+	if (!Q_strncmp(value,"false",5))	{ item->type=cJSON_False; return value+5; }
+	if (!Q_strncmp(value,"true",4))	{ item->type=cJSON_True; item->valueint=1;	return value+4; }
 	if (*value=='\"')				{ return parse_string(item,value); }
 	if (*value=='-' || (*value>='0' && *value<='9'))	{ return parse_number(item,value); }
 	if (*value=='[')				{ return parse_array(item,value); }

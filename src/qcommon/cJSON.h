@@ -23,6 +23,12 @@
 #ifndef cJSON__h
 #define cJSON__h
 
+#include "../game/g_local.h"
+#include "q_shared.h"
+
+//TODO this shouldn't be hardcoded probably
+#define DBL_EPSILON 2.2204460492503131e-16
+
 #ifdef __cplusplus
 extern "C"
 {
