@@ -21,7 +21,8 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 ===========================================================================
 */
 
-#include "g_local.h"
+//#include "g_local.h"
+#include "../qcommon/cJSON.h"
 
 // g_client.c -- client functions that don't happen every frame
 
@@ -1307,9 +1308,10 @@ char *ClientConnect( int clientNum, qboolean firstTime )
   char      guid[ 33 ];
   char      ip[ 16 ] = {""};
   char      reason[ MAX_STRING_CHARS ] = {""};
-  int       i;
+  int       i,j;
   char			guid2[ 33 ];
   char data[ 255 ];
+  cJSON *json;
 	
 
   ent = &g_entities[ clientNum ];
@@ -1428,7 +1430,7 @@ char *ClientConnect( int clientNum, qboolean firstTime )
     G_LogPrintf( "ClientConnect: %i [%s] (%s) \"%s^7\"\n", clientNum,
       client->pers.ip, client->pers.guid, client->pers.netname );
   }
-  if(trap_mysql_runquery( va("SELECT HIGH_PRIORITY id,credits,evos,timeplayed,adminlevel,playerlevel,gameswin,structsbuilt,structskilled FROM players WHERE qkey = \"%s\" LIMIT 1", client->pers.guid)) == qtrue)
+  if(trap_mysql_runquery( va("SELECT HIGH_PRIORITY id,credits,evos,timeplayed,adminlevel,playerlevel,gameswin,structsbuilt,structskilled,badges FROM players WHERE qkey = \"%s\" LIMIT 1", client->pers.guid)) == qtrue)
   {
 		if( trap_mysql_fetchrow() == qtrue ) 
 		{
@@ -1449,11 +1451,17 @@ char *ClientConnect( int clientNum, qboolean firstTime )
 				trap_mysql_fetchfieldbyName( "structsbuilt", data, sizeof(data));
 				client->pers.structsbuilt = atoi(data);
 				trap_mysql_fetchfieldbyName( "structskilled", data, sizeof(data));
-				client->pers.structskilled = atoi(data);
+        client->pers.structskilled = atoi(data);
+        trap_mysql_fetchfieldbyName( "badges", data, sizeof(data));
+        json = cJSON_Parse(data);
+        for(j=0;j<50;j++) {
+          cJSON *badge = cJSON_GetArrayItem(json, j);
+          client->pers.badges[j] = badge->valueint;
+        }
 				trap_mysql_finishquery();
 				
 				//Player exists lets get the badges.
-				if( trap_mysql_runquery( va("SELECT HIGH_PRIORITY idbadge FROM badges_player WHERE idplayer = \"%d\" LIMIT 50", client->pers.mysqlid)) == qtrue )
+				/*if( trap_mysql_runquery( va("SELECT HIGH_PRIORITY idbadge FROM badges_player WHERE idplayer = \"%d\" LIMIT 50", client->pers.mysqlid)) == qtrue )
 				{
 					i = 0;
 					while(trap_mysql_fetchrow() == qtrue)
@@ -1473,7 +1481,7 @@ char *ClientConnect( int clientNum, qboolean firstTime )
 				else
 				{
 					//Our user dont have badges.
-				}
+				}*/
 		}
 		else
 		{
