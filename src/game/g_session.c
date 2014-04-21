@@ -301,7 +301,7 @@ void G_WriteSessionData( void )
 				{
 					trap_mysql_finishquery();
 				}
-				cJSON_free(badge_out);
+				//cJSON_free(badge_out);
 			}
 		}
   }
