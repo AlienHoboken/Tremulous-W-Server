@@ -1311,7 +1311,7 @@ char *ClientConnect( int clientNum, qboolean firstTime )
   int       i,j;
   char			guid2[ 33 ];
   char data[ 255 ];
-  cJSON *json;
+  cJSON *json = NULL;
 	
 
   ent = &g_entities[ clientNum ];
@@ -1462,29 +1462,6 @@ char *ClientConnect( int clientNum, qboolean firstTime )
           }
         }
 				trap_mysql_finishquery();
-				
-				//Player exists lets get the badges.
-				/*if( trap_mysql_runquery( va("SELECT HIGH_PRIORITY idbadge FROM badges_player WHERE idplayer = \"%d\" LIMIT 50", client->pers.mysqlid)) == qtrue )
-				{
-					i = 0;
-					while(trap_mysql_fetchrow() == qtrue)
-					{
-						trap_mysql_fetchfieldbyName( "idbadge", data, sizeof(data));
-						i = atoi(data);
-						if(i > 49)
-						{
-							//This is not suppose to happend.
-							continue;
-						}
-						client->pers.badgesobtained++;
-						client->pers.badgeupdate[ i ] = 0;
-						client->pers.badges[ i ] = 1;
-					}
-				}
-				else
-				{
-					//Our user dont have badges.
-				}*/
 		}
 		else
 		{

@@ -154,8 +154,8 @@ G_WriteSessionData
 void G_WriteSessionData( void )
 {
   int    i,j;
-  cJSON *root;
-  char *badge_out;
+  cJSON *root = NULL;
+  char *badge_out = NULL;
 
   //TA: ?
   trap_Cvar_Set( "session", va( "%i", 0 ) );
@@ -281,21 +281,6 @@ void G_WriteSessionData( void )
 				if( trap_mysql_runquery( va("UPDATE players SET credits=\"%d\",evos=\"%d\",timeplayed=\"%d\",adminlevel=\"%d\",lasttime=NOW(),gameswin=\"%d\",structsbuilt=\"%d\",structskilled=\"%d\",badges=\"%s\" WHERE id=\"%d\" LIMIT 1", level.clients[ i ].pers.credits, level.clients[ i ].pers.evos, level.clients[ i ].pers.timeplayed, level.clients[ i ].pers.adminlevel, level.clients[ i ].pers.gameswin, level.clients[ i ].pers.structsbuilt, level.clients[ i ].pers.structskilled, badge_out, level.clients[ i ].pers.mysqlid ) ) == qtrue )
 				{
 					trap_mysql_finishquery();
-					//Lets update the badges. //FIX ME: WTF LOL DOUBLE LOOPED UNECESARY
-					/*for(j=1;j<49;j++)
-					{
-						if(level.clients[ i ].pers.badgeupdate[j] == 1)
-						{
-							if(trap_mysql_runquery( va("INSERT HIGH_PRIORITY INTO badges_player (idplayer,idbadge) VALUES (\"%d\",\"%d\")", level.clients[ i ].pers.mysqlid, j ) ) == qtrue)
-							{
-								trap_mysql_finishquery();
-							}
-							else
-							{
-								trap_mysql_finishquery();
-							}
-						}
-					}*/
 				}
 				else
 				{
